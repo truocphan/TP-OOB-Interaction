@@ -1,0 +1,10 @@
+certifi>=2024.8.30
+cffi>=1.17.1
+charset-normalizer>=3.3.2
+cryptography>=43.0.1
+idna>=3.10
+json-duplicate-keys>=2024.7.17
+pycparser>=2.22
+requests>=2.32.3
+TP-sendNotify>=2024.9.1
+urllib3>=2.2.3

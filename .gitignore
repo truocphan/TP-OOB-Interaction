@@ -1,0 +1,10 @@
+*
+!/.gitignore
+!/LICENSE
+!/MANIFEST.in
+!/README.md
+!/requirements.txt
+!/SECURITY.md
+!/setup.py
+!/TP_OOB_Interaction/
+!/TP_OOB_Interaction/__init__.py
