@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
 	name = "TP-OOB-Interaction",
-	version = "2024.9.23",
+	version = "2024.9.27",
 	author = "TP Cyber Security",
 	license = "MIT",
 	author_email = "tpcybersec2023@gmail.com",

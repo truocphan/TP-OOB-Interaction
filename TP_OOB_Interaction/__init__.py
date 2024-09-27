@@ -72,7 +72,7 @@ def register():
 				break
 		except Exception as e:
 			print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + " \x1b[0;31m"+str(e)+"\x1b[0m")
-			time.sleep(5)
+		time.sleep(5)
 
 
 def decryptAESKey(encryptedAESkey, privateKey):
@@ -110,11 +110,13 @@ def decryptData(encryptedData, AESkey):
 
 
 def poll(oastServer, correlationId, secretKey, privateKey):
-	while True:
-		try:
-			res = requests.get("https://{oastServer}/poll?id={correlationId}&secret={secretKey}".format(oastServer=oastServer, correlationId=correlationId, secretKey=secretKey))
-			if res.status_code == 200 and res.json()["data"] != None:
-				AESkey = decryptAESKey(res.json()["aes_key"], privateKey)
+	isOK = False
+	try:
+		res = requests.get("https://{oastServer}/poll?id={correlationId}&secret={secretKey}".format(oastServer=oastServer, correlationId=correlationId, secretKey=secretKey))
+		if res.status_code == 200:
+			AESkey = decryptAESKey(res.json()["aes_key"], privateKey)
+			isOK = True
+			if res.json()["data"] != None:
 				for encryptedData in res.json()["data"]:
 					data = jdks.loads(decryptData(encryptedData, AESkey))
 					print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + "[\x1b[0;33m"+data.get("full-id")+"."+oastServer+"\x1b[0m]" + " Received \x1b[0;33m{protocol}\x1b[0m interaction\x1b[0;33m{q_type}\x1b[0m from \x1b[0;33m{remote_address}\x1b[0m at \x1b[0;33m{timestamp}\x1b[0m".format(protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp")))
@@ -127,10 +129,9 @@ def poll(oastServer, correlationId, secretKey, privateKey):
 
 					if args.slack_bot:
 						TP_sendNotify.toSlack(args.slack_bot, "*[{collaboratorServer}] Received {protocol} interaction{q_type} from {remote_address} at {timestamp}*\n```{raw_request}```".format(collaboratorServer=data.get("full-id")+"."+oastServer, protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp"), raw_request=data.get("raw-request")))
-		except Exception as e:
-			print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + " \x1b[0;31m"+str(e)+"\x1b[0m")
-			time.sleep(5)
-		time.sleep(1)
+	except Exception as e:
+		print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + " \x1b[0;31m"+str(e)+"\x1b[0m")
+	return isOK
 
 
 def Update(): os.system("{} -W ignore -m pip install TP-OOB-Interaction --upgrade".format(sys.executable))
@@ -144,7 +145,7 @@ def main():
 	print(r"   | | |  __/  | |_| | |_| | |_) |_____| || | | | ||  __/ | | (_| | (__| |_| | (_) | | | |")
 	print(r"   |_| |_|      \___/ \___/|____/     |___|_| |_|\__\___|_|  \__,_|\___|\__|_|\___/|_| |_|")
 	print("\x1b[0m")
-	print("                                \x1b[0;34mv2024.9.23\x1b[0m by \x1b[0;31mTP Cyber Security (@TPCyberSec)\x1b[0m")
+	print("                                \x1b[0;34mv2024.9.27\x1b[0m by \x1b[0;31mTP Cyber Security (@TPCyberSec)\x1b[0m")
 	print("\x1b[0m")
 
 	global args, InteractConfig
@@ -167,24 +168,18 @@ def main():
 			InteractConfig = jdks.load(os.path.join(os.path.expanduser("~"), ".TPConfig", "TP-OOB-Interaction", "OOB-Interaction.json"))
 
 			if type(InteractConfig) == jdks.JSON_DUPLICATE_KEYS:
-				try:
-					res = requests.get("https://{oastServer}/poll?id={correlationId}&secret={secretKey}".format(oastServer=InteractConfig.get("oastServer"), correlationId=InteractConfig.get("correlationId"), secretKey=base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8")))
-					if "aes_key" in res.json().keys():
-						decryptAESKey(res.json()["aes_key"], base64.b64decode(InteractConfig.get("privateKey")).decode("utf-8"))
+				if poll(InteractConfig.get("oastServer"), InteractConfig.get("correlationId"), base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8"), base64.b64decode(InteractConfig.get("privateKey")).decode("utf-8")):
+					break
+				else:
+					res = requests.post("https://{oastServer}/register".format(oastServer=InteractConfig.get("oastServer")),
+						json = {
+							"public-key": InteractConfig.get("publicKey"),
+							"secret-key": base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8"),
+							"correlation-id": InteractConfig.get("correlationId")
+						}
+					)
+					if res.status_code == 200 and res.json()["message"] == "registration successful":
 						break
-					else:
-						res = requests.post("https://{oastServer}/register".format(oastServer=InteractConfig.get("oastServer")),
-							json = {
-								"public-key": InteractConfig.get("publicKey"),
-								"secret-key": base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8"),
-								"correlation-id": InteractConfig.get("correlationId")
-							}
-						)
-						if res.status_code == 200 and res.json()["message"] == "registration successful":
-							break
-				except Exception as e:
-					pass
-
 			register()
 
 
@@ -200,7 +195,9 @@ def main():
 
 		print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + " Collaborator Server: \x1b[0;31m{collaboratorServer}\x1b[0m".format(collaboratorServer=InteractConfig.get("collaboratorServer")))
 
-		poll(InteractConfig.get("oastServer"), InteractConfig.get("correlationId"), base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8"), base64.b64decode(InteractConfig.get("privateKey")).decode("utf-8"))
+		while True:
+			poll(InteractConfig.get("oastServer"), InteractConfig.get("correlationId"), base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8"), base64.b64decode(InteractConfig.get("privateKey")).decode("utf-8"))
+			time.sleep(1)
 
 
 if __name__ == "__main__":
