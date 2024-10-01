@@ -35,7 +35,7 @@ To send notifications successfully, please refer to the [sendNotify.json](https:
    | | |  __/  | |_| | |_| | |_) |_____| || | | | ||  __/ | | (_| | (__| |_| | (_) | | | |
    |_| |_|      \___/ \___/|____/     |___|_| |_|\__\___|_|  \__,_|\___|\__|_|\___/|_| |_|
 
-                                v2024.9.27 by TP Cyber Security (@TPCyberSec)
+                                v2024.10.1 by TP Cyber Security (@TPCyberSec)
 
 usage: TP-OOB-Interaction [-h] [--discord-bot BOT_NAME] [--telegram-bot BOT_NAME] [--slack-bot BOT_NAME] [--update]
 
@@ -56,6 +56,9 @@ options:
 ---
 
 ## CHANGELOG
+#### [TP-OOB-Interaction v2024.10.1](https://github.com/truocphan/TP-OOB-Interaction/tree/2024.10.1)
+- **Fixed**: Breaking Markdown Messages
+
 #### [TP-OOB-Interaction v2024.9.27](https://github.com/truocphan/TP-OOB-Interaction/tree/2024.9.27)
 - **Fixed**: Do not poll old data when rerunning
 

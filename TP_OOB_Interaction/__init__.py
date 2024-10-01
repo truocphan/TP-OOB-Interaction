@@ -5,9 +5,16 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import requests
-import argparse
+import argparse, signal
 import json_duplicate_keys as jdks
 import TP_sendNotify
+
+
+def handler(signum, stack_frame):
+	res = input("\n \x1b[0;31mDo you really want to exit? [Y/n]\x1b[0m ")
+	if res in ["y", "Y", ""]: exit()
+
+signal.signal(signal.SIGINT, handler)
 
 
 def generate_random_string():
@@ -122,13 +129,13 @@ def poll(oastServer, correlationId, secretKey, privateKey):
 					print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + "[\x1b[0;33m"+data.get("full-id")+"."+oastServer+"\x1b[0m]" + " Received \x1b[0;33m{protocol}\x1b[0m interaction\x1b[0;33m{q_type}\x1b[0m from \x1b[0;33m{remote_address}\x1b[0m at \x1b[0;33m{timestamp}\x1b[0m".format(protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp")))
 
 					if args.discord_bot:
-						TP_sendNotify.toDiscord(args.discord_bot, "### [{collaboratorServer}] Received {protocol} interaction{q_type} from {remote_address} at {timestamp}\n{raw_request}".format(collaboratorServer=data.get("full-id")+"."+oastServer, protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp"), raw_request=data.get("raw-request")), SidebarColor=0xffff00)
+						TP_sendNotify.toDiscord(args.discord_bot, "### [{collaboratorServer}] Received {protocol} interaction{q_type} from {remote_address} at {timestamp}\n```\n{raw_request}\n```".format(collaboratorServer=data.get("full-id")+"."+oastServer, protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp"), raw_request=data.get("raw-request").replace("```","``ˋ")), SidebarColor=0xffff00)
 
 					if args.telegram_bot:
-						TP_sendNotify.toTelegram(args.telegram_bot, "*[{collaboratorServer}] Received {protocol} interaction{q_type} from {remote_address} at {timestamp}*\n```\n{raw_request}\n```".format(collaboratorServer=data.get("full-id")+"."+oastServer, protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp"), raw_request=data.get("raw-request")), MessageFormat="Markdown")
+						TP_sendNotify.toTelegram(args.telegram_bot, "*[{collaboratorServer}] Received {protocol} interaction{q_type} from {remote_address} at {timestamp}*\n```\n{raw_request}\n```".format(collaboratorServer=data.get("full-id")+"."+oastServer, protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp"), raw_request=data.get("raw-request").replace("```","``ˋ")), MessageFormat="Markdown")
 
 					if args.slack_bot:
-						TP_sendNotify.toSlack(args.slack_bot, "*[{collaboratorServer}] Received {protocol} interaction{q_type} from {remote_address} at {timestamp}*\n```{raw_request}```".format(collaboratorServer=data.get("full-id")+"."+oastServer, protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp"), raw_request=data.get("raw-request")))
+						TP_sendNotify.toSlack(args.slack_bot, "*[{collaboratorServer}] Received {protocol} interaction{q_type} from {remote_address} at {timestamp}*\n```\n{raw_request}\n```".format(collaboratorServer=data.get("full-id")+"."+oastServer, protocol=data.get("protocol").upper(), q_type=(" ("+data.get("q-type")+")" if data.get("q-type")!="JSON_DUPLICATE_KEYS_ERROR" else ""), remote_address=data.get("remote-address"), timestamp=data.get("timestamp"), raw_request=data.get("raw-request").replace("```","``ˋ")))
 	except Exception as e:
 		print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + " \x1b[0;31m"+str(e)+"\x1b[0m")
 	return isOK
@@ -145,7 +152,7 @@ def main():
 	print(r"   | | |  __/  | |_| | |_| | |_) |_____| || | | | ||  __/ | | (_| | (__| |_| | (_) | | | |")
 	print(r"   |_| |_|      \___/ \___/|____/     |___|_| |_|\__\___|_|  \__,_|\___|\__|_|\___/|_| |_|")
 	print("\x1b[0m")
-	print("                                \x1b[0;34mv2024.9.27\x1b[0m by \x1b[0;31mTP Cyber Security (@TPCyberSec)\x1b[0m")
+	print("                                \x1b[0;34mv2024.10.1\x1b[0m by \x1b[0;31mTP Cyber Security (@TPCyberSec)\x1b[0m")
 	print("\x1b[0m")
 
 	global args, InteractConfig
@@ -168,8 +175,7 @@ def main():
 			InteractConfig = jdks.load(os.path.join(os.path.expanduser("~"), ".TPConfig", "TP-OOB-Interaction", "OOB-Interaction.json"))
 
 			if type(InteractConfig) == jdks.JSON_DUPLICATE_KEYS:
-				if poll(InteractConfig.get("oastServer"), InteractConfig.get("correlationId"), base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8"), base64.b64decode(InteractConfig.get("privateKey")).decode("utf-8")):
-					break
+				if poll(InteractConfig.get("oastServer"), InteractConfig.get("correlationId"), base64.b64decode(InteractConfig.get("secretKey")).decode("utf-8"), base64.b64decode(InteractConfig.get("privateKey")).decode("utf-8")): break
 				else:
 					res = requests.post("https://{oastServer}/register".format(oastServer=InteractConfig.get("oastServer")),
 						json = {
@@ -178,19 +184,18 @@ def main():
 							"correlation-id": InteractConfig.get("correlationId")
 						}
 					)
-					if res.status_code == 200 and res.json()["message"] == "registration successful":
-						break
+					if res.status_code == 200 and res.json()["message"] == "registration successful": break
 			register()
 
 
 		if args.discord_bot:
-			TP_sendNotify.toDiscord(args.discord_bot, "## {collaboratorServer}\n- **secretKey:** {secretKey}\n- **publicKey:** {publicKey}\n- **privateKey:** {privateKey}".format(collaboratorServer=InteractConfig.get("collaboratorServer"), secretKey=InteractConfig.get("secretKey"), publicKey=InteractConfig.get("publicKey"), privateKey=InteractConfig.get("privateKey")), SidebarColor=0x00ccff)
+			TP_sendNotify.toDiscord(args.discord_bot, "**Collaborator Server:** {collaboratorServer}\n```\n{InteractConfig}\n```".format(collaboratorServer=InteractConfig.get("collaboratorServer"), InteractConfig=InteractConfig.dumps(indent=4)), SidebarColor=0x00ccff)
 
 		if args.telegram_bot:
-			TP_sendNotify.toTelegram(args.telegram_bot, "*Collaborator Server: {collaboratorServer}*\n```\n- secretKey: {secretKey}\n- publicKey: {publicKey}\n- privateKey: {privateKey}```".format(collaboratorServer=InteractConfig.get("collaboratorServer"), secretKey=InteractConfig.get("secretKey"), publicKey=InteractConfig.get("publicKey"), privateKey=InteractConfig.get("privateKey")), MessageFormat="Markdown")
+			TP_sendNotify.toTelegram(args.telegram_bot, "*Collaborator Server:* {collaboratorServer}\n```\n{InteractConfig}\n```".format(collaboratorServer=InteractConfig.get("collaboratorServer"), InteractConfig=InteractConfig.dumps(indent=4)), MessageFormat="Markdown")
 
 		if args.slack_bot:
-			TP_sendNotify.toSlack(args.slack_bot, "*Collaborator Server: {collaboratorServer}*\n```- secretKey: {secretKey}\n- publicKey: {publicKey}\n- privateKey: {privateKey}\n```".format(collaboratorServer=InteractConfig.get("collaboratorServer"), secretKey=InteractConfig.get("secretKey"), publicKey=InteractConfig.get("publicKey"), privateKey=InteractConfig.get("privateKey")))
+			TP_sendNotify.toSlack(args.slack_bot, "*Collaborator Server:* {collaboratorServer}\n```\n{InteractConfig}\n```".format(collaboratorServer=InteractConfig.get("collaboratorServer"), InteractConfig=InteractConfig.dumps(indent=4)))
 
 
 		print("[\x1b[0;34m"+datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")+"\x1b[0m]" + " Collaborator Server: \x1b[0;31m{collaboratorServer}\x1b[0m".format(collaboratorServer=InteractConfig.get("collaboratorServer")))
